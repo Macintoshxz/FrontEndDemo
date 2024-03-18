@@ -1,0 +1,116 @@
+
+.aui-page__login {
+    position: relative;
+    display: flex;
+    justify-content: center; /* Center horizontally */
+    align-items: center; /* Center vertically */
+    min-height: 100vh; /* Full viewport height */
+    padding: 15px; /* Adjust padding to ensure content fits within the viewport */
+}
+
+.aui-page__login::before,
+.aui-page__login::after {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: -1;
+    content: "";
+}
+
+.aui-page__login::after {
+    background-color: rgba(38, 50, 56, .4);
+}
+
+.aui-page__login .aui-content {
+    display: flex;
+    flex-direction: column; /* Changed for direct vertical layout */
+    justify-content: center;
+    align-items: center;
+/*    min-height: 100vh;*/
+    padding: 0 20px; /* Reduced and unified padding */
+    text-align: center;
+}
+
+/* Adjust the wrapper to not exceed viewport and remove forced height */
+.aui-page__login .aui-content__wrapper {
+    max-height: calc(100vh - 30px); /* Adjusted for potential padding */
+    background-color: transparent;
+    overflow-x: hidden;
+    overflow-y: auto; /* Keep for content that might exceed in smaller viewports */
+    padding: 20px; /* Ensure internal padding does not cause overflow */
+    box-sizing: border-box; /* Include padding in height calculation */
+}
+
+.aui-page__login .login-header {
+    padding: 10px 0;
+    color: #fff;
+}
+
+.aui-page__login .login-header .login-brand {
+    margin: 0 0 15px;
+    font-size: 40px;
+    font-weight: 400;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+}
+
+.aui-page__login .login-header .login-intro > li {
+    font-size: 18px; /* Increased font size for intro list */
+    line-height: 1.5;
+    color: rgba(255, 255, 255, .6);
+}
+
+.aui-page__login .login-body,
+.aui-page__login .login-footer {
+    width: 460px;
+    background-color: #fff; /* Ensured login body and footer have white background */
+}
+
+.aui-page__login .login-body {
+    padding: 20px 30px;
+    background-color: #fff; /* Set login body background to white */
+}
+
+.aui-page__login .login-body .login-title {
+    font-size: 20px; /* Enlarged font size for login title */
+    font-weight: 400;
+}
+
+.aui-page__login .login-body .el-input__prefix .el-input__icon {
+    font-size: 18px; /* Increased icon size in input */
+}
+
+.aui-page__login .login-body .login-captcha > img {
+    max-width: 100%;
+    cursor: pointer;
+}
+
+.aui-page__login .login-footer {
+    position: absolute;
+    bottom: 0;
+    padding: 20px;
+    color: rgba(255, 255, 255, .6); /* Adjusted for consistency */
+}
+
+.aui-page__login .login-footer a,
+.aui-page__login .login-footer a:focus,
+.aui-page__login .login-footer a:hover {
+    color: rgba(255, 255, 255, .6); /* Footer links color adjusted for better visibility */
+    text-decoration: underline; /* Added underline to make links more noticeable */
+}
+
+/* Ensuring footer links are clearly visible on hover */
+.aui-page__login .login-footer a:hover {
+    color: #fff;
+}
+
+.aui-page__login .login-header .welcome-message {
+    font-size: 30px; /* Increased font size */
+    font-weight: bold;
+    color: #000000; /* Dark blue color */
+    margin: 20px 0;
+    text-align: center;
+}
+

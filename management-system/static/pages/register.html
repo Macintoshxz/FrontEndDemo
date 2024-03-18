@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title></title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">  
+        <!-- 引入样式 -->
+        <link rel="stylesheet" href="../plugins/elementui/index.css">
+        <link rel="stylesheet" href="../plugins/font-awesome/css/font-awesome.min.css">
+        <link rel="stylesheet" href="../css/style.css">
+        <link rel="stylesheet" href="../css/login.css">
+    </head>
+    <body>
+    <div id="app">
+        <div class="aui-wrapper aui-page__login">
+            <div class="aui-content__wrapper">
+              <main class="aui-content">
+                <div class="login-header">
+                  <image
+                  src="../image/logo.png"
+                  style="width: 10%;"
+                />
+                  <!-- <h2 class="login-brand">Register</h2> -->
+                </div>
+                <div class="login-body">
+                  <h3 class="login-title">Register</h3>
+                  <el-form :model="dataForm" :rules="dataRule" ref="dataForm" autocomplete="off" @keyup.enter.native="dataFormSubmitHandle()" status-icon>
+                    <el-form-item prop="userName">
+                      <el-input v-model="dataForm.userName" autocomplete="off" placeholder="Please enter your login name">
+                      </el-input>
+                    </el-form-item>
+                    <el-form-item prop="email">
+                      <el-input v-model="dataForm.email" autocomplete="off" placeholder="Please enter your login email">
+                      </el-input>
+                    </el-form-item>
+                    <el-form-item prop="password">
+                      <el-input v-model="dataForm.password" autocomplete="off" type="password" placeholder="Please enter your login password">
+                      </el-input>
+                    </el-form-item>
+                    <el-form-item>
+                      <el-button type="primary" @click="redirectToNewPage('/login')" class="w-percent-100">Go To Login</el-button>
+                      <el-button type="primary" @click="dataFormSubmitHandle()" class="w-percent-100">Register</el-button>
+                    </el-form-item>
+                  </el-form>
+                </div>
+              </main>
+            </div>
+          </div>
+    </div>
+</body>
+<script src="../js/vue.js"></script>
+<script src="../plugins/elementui/index.js"></script>
+<script type="text/javascript" src="../js/jquery.min.js"></script>
+<script src="../js/axios-0.18.0.js"></script>
+<script>
+      const myWindow = window;
+    var vue = new Vue({
+        el: '#app',
+        data:{
+            dataForm: {
+                userName :'',                
+                email:'',
+                password: '',
+            }
+        },
+        computed: {
+            dataRule () {
+            return {
+                userName:[
+                  { required: true, message: "Required field", trigger: 'blur' }
+                ],
+                email: [
+                  { required: true, message: "Required field", trigger: 'blur' },
+                  { type:"email", message: "Please enter the correct email format", trigger: 'blur' }
+                ],
+                password: [
+                  { required: true, message: "Required field", trigger: 'blur' }
+                ],
+            }
+            }
+        },
+        //钩子函数，VUE对象初始化完成后自动执行
+        created() {
+        },
+        methods: {
+                // 表单提交
+                dataFormSubmitHandle: function () {
+                this.$refs['dataForm'].validate((valid) => {
+                    if (!valid) {
+                      return false
+                    }
+                    axios.post('/v1/user/register',this.dataForm).then(({data: res})=>{
+                        this.$message({
+                                message: res.msg,
+                                type: 'success'
+                        });
+                        this.dataForm={}
+                    });
+                })
+            },
+            redirectToNewPage(url) {
+              // 使用 window.location.href 进行页面跳转
+              myWindow.location.href = url;
+              
+              // 或者使用 window.location.replace，替换当前历史记录
+              // window.location.replace('/new-page');
+            } 
+        }
+        
+    })
+
+</script>
+</html>

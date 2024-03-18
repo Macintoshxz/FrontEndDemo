@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+    <!-- 页面meta -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>manage-system</title>
+    <meta content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" name="viewport">
+    <!-- 引入样式 -->
+    <link rel="stylesheet" href="../plugins/elementui/index.css">
+    <link rel="stylesheet" href="../plugins/font-awesome/css/font-awesome.min.css">
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body class="hold-transition">
+<div id="app">
+    <div class="content-header">
+        <div>   <image
+            src="../image/logo.png"
+            mode="scaleToFill"
+            style="width: 20%;"
+          /></div>
+        <div>
+            <el-button  @click="logout" >Log out</el-button>
+        </div>
+    </div>
+    <div class="app-container">
+        <div class="box">
+            <div class="filter-container">
+                <el-input placeholder="Manager" v-model="pagination.filter.manager" style="width: 200px;" class="filter-item"></el-input>
+                <el-button @click="getAll()" class="dalfBut">Search</el-button>
+                <el-button type="primary" class="butT" @click="handleCreate()">Create</el-button>
+                <el-button type="danger" class="butT"  @click="handleDelete"    :disabled="multiple">Delete</el-button>
+                <el-button type="primary" class="butT"  @click="exportToCSV"    :disabled="multiple">ExportCSV</el-button>
+            </div>
+            <el-table current-row-key="Id" :data="dataList" @selection-change="handleSelectionChange" stripe highlight-current-row>
+                <!-- <el-table-column type="index" align="center" label="index"></el-table-column> -->
+                <el-table-column type="selection" width="55"></el-table-column>
+                <el-table-column prop="manager"  sortable  label="Manager" align="left"></el-table-column>
+                <el-table-column prop="labsLeads"  sortable  label="Labs lead" align="left"></el-table-column>
+                <!-- <el-table-column prop="pmCioName"  sortable  label="PM/CIO Name" align="left"></el-table-column> -->
+                <el-table-column prop="Type"  sortable  label="Type" align="left"></el-table-column>
+                <el-table-column prop="currentStage"  sortable  label="Current stage" align="left"></el-table-column>
+                <el-table-column prop="UpdateAt"  sortable  label="Latest updated time" align="left">
+                        <template slot-scope="scope">
+                        {{scope.row.UpdateAt !="" ? scope.row.UpdateAt.split("T")[0] : ""}}
+                    </template>
+                </el-table-column>
+                <el-table-column prop="needRevisit"  sortable  label="Need revisit?" align="center"></el-table-column>
+                <el-table-column prop="filePath" label="Attachment" align="center">
+                    <template slot-scope="scope">
+                        <span v-if="scope.row.filePath ==='' ">no file</span>
+                        <el-popover v-else
+                            placement="right"
+                            width="400"
+                            trigger="click">
+                            <ol >
+                                <li v-for="(item,index) in (JSON.parse(scope.row.filePath))" :key="index">
+                                    <a :href="item.data">{{item.name}}</a>
+                                </li>
+                            </ol>
+                            <el-button slot="reference">download</el-button>
+                        </el-popover>
+                    </template>
+                </el-table-column>
+                <el-table-column label="Option" align="center">
+                    <template slot-scope="scope">
+                        <el-button type="text" size="mini" @click="handleUpdate(scope.row)">Edit Info</el-button>
+                        <el-button type="text" size="mini" @click="handlShowVisit(scope.row)">Add Record</el-button>
+                        <el-button type="text" size="mini" @click="handleDelete(scope.row)">Delete</el-button>
+                    </template>
+                </el-table-column>
+            </el-table>
+            <!--分页组件-->
+            <div class="pagination-container">
+                <el-pagination
+                        class="pagiantion"
+                        @current-change="handleCurrentChange"
+                        :current-page="pagination.currentPage"
+                        :page-size="pagination.pageSize"
+                        prev-text="prev"
+                        next-text="next"
+                        layout="total, prev, pager, next, jumper"
+                        :total="pagination.total">
+                </el-pagination>
+            </div>
+            <!-- 新增标签弹层 -->
+            <div class="add-form">
+                <el-dialog title="Create" :visible.sync="dialogFormVisible" :close-on-click-modal="false" :close-on-press-escape="false"	 width="1200px">
+                    <el-form ref="dataAddForm" :model="formData" :rules="rules" label-position="left" :loading="formLoading" size="small" label-width="200px">
+                        <el-row>
+                            <el-col :span="12">
+                                <el-card class="box-card" shadow="never">
+                                    <div slot="header" class="clearfix">
+                                        <span style="color: #67C23A;">Basic Information:</span>
+                                    </div>
+                                    <el-form-item label="Manager Name">
+                                        <el-input v-model="formData.manager"></el-input>
+                                    </el-form-item>
+                                    <el-form-item label="Labs leads">
+                                        <el-select v-model="formData.labsLeads" placeholder="Please Select">
+                                            <el-option
+                                              v-for="item in labsOptions"
+                                              :key="item.value"
+                                              :label="item.label"
+                                              :value="item.value">
+                                            </el-option>
+                                        </el-select>
+                                    </el-form-item>
+                                    <el-form-item label="PM/CIO Name">
+                                        <el-input v-model="formData.pmCioName"></el-input>
+                                    </el-form-item>
+                                    <el-form-item label="Type">
+                                        <el-input v-model="formData.Type"></el-input>
+                                    </el-form-item>
+                                    <el-form-item label="Former Employer">
+                                        <el-input v-model="formData.formerEmployer"></el-input>
+                                    </el-form-item>
+                                    <el-form-item label="Firm AUM">
+                                        <el-input v-model="formData.firmAUM"></el-input>
+                                    </el-form-item>
+                                    <el-form-item label="Source">
+                                        <el-input v-model="formData.source"></el-input>
+                                    </el-form-item>
+                                    <el-form-item label="Available Strategy Capacity ($mm vol)">
+                                        <el-input v-model="formData.asCapacity"></el-input>
+                                    </el-form-item>
+                                    <el-form-item label="LinkedIn">
+                                        <el-input v-model="formData.connectionedinPage"></el-input>
+                                    </el-form-item>
+                                    <el-form-item label="Email Contact">
+                                        <el-input v-model="formData.emailContact"></el-input>
+                                    </el-form-item>
+                                  </el-card>
+                            </el-col>
+                            <el-col :span="12">
+                                <el-card class="box-card" shadow="never">
+                                    <div slot="header" class="clearfix">
+                                        <span style="color: #67C23A;">Communication History:</span>
+                                    </div>
+                                      <el-form-item label="Date">
+                                            <el-date-picker
+                                            v-model="formData.reviewDate"
+                                            type="date"
+                                            placeholder="Option Date">
+                                        </el-date-picker>
+                                      </el-form-item>
+                                      <el-form-item label="Current stage of review ">
+                                        <el-select v-model="formData.currentStage" placeholder="Please Select">
+                                            <el-option
+                                            v-for="item in reviewOption"
+                                            :key="item.value"
+                                            :label="item.label"
+                                            :value="item.value">
+                                            </el-option>
+                                        </el-select>
+                                      </el-form-item>
+                                      <el-form-item label="Comment">
+                                        <el-input v-model="formData.comment"></el-input>
+                                      </el-form-item>
+                                      <el-form-item label="Investment Conviction">
+                                        <el-select v-model="formData.investConviction" placeholder="Please Select">
+                                            <el-option
+                                            v-for="item in convOption"
+                                            :key="item.value"
+                                            :label="item.label"
+                                            :value="item.value">
+                                            </el-option>
+                                        </el-select>
+                                      </el-form-item>
+                                      <el-form-item label="Want to revisit it?">
+                                        <el-radio-group v-model="formData.isRevisit">
+                                            <el-radio label="1">Yes</el-radio>
+                                            <el-radio label="2">No</el-radio>
+                                          </el-radio-group>
+                                      </el-form-item>
+                                      <el-form-item label="How long to revisit?">
+                                        <el-select v-model="formData.howRevisit" placeholder="Please Select">
+                                            <el-option
+                                            v-for="item in visitOption"
+                                            :key="item.value"
+                                            :label="item.label"
+                                            :value="item.value">
+                                            </el-option>
+                                        </el-select>
+                                      </el-form-item>
+                                  </el-card>
+                            </el-col>
+                        </el-row>
+                        <el-row>
+                            <el-card class="box-card" shadow="never">
+                                <div slot="header" class="clearfix">
+                                    <span style="color: #67C23A;">Communication History:</span>
+                                </div>
+                                <el-upload
+                                    class="upload-demo"
+                                    action="/v1/upload"
+                                    :on-preview="handlePreview"
+                                    :on-remove="handleRemove"
+                                    :before-remove="beforeRemove"
+                                    multiple
+                                    :limit="3"
+                                    :on-success="uploadSucess"
+                                    :on-exceed="handleExceed"
+                                    :file-list="fileList">
+                                    <el-button size="small" type="primary">Upload</el-button>
+                                    <!-- <div slot="tip" class="el-upload__tip">Only Upload jpg/png，should be smaller than 500kb</div> -->
+                                </el-upload>
+                            </el-card>
+                        </el-row>
+                    </el-form>
+                    <div slot="footer" class="dialog-footer">
+                        <el-button @click="cancel()">Cancel</el-button>
+                        <el-button type="primary" @click="handleAdd()">OK</el-button>
+                    </div>
+                </el-dialog>
+            </div>
+
+            <!-- 编辑标签弹层 -->
+            <div class="add-form">
+                <el-dialog title="Edit" :visible.sync="dialogFormVisible4Edit">
+                    <el-form ref="dataAddForm" :model="formData" :rules="rules" label-position="left" :loading="formLoading" size="small" label-width="200px">
+                        <el-row>
+                            <el-col :span="24">
+                                <el-card class="box-card" shadow="never">
+                                    <div slot="header" class="clearfix">
+                                        <span style="color: #67C23A;">Basic Information:</span>
+                                    </div>
+                                    <el-form-item label="Manager Name">
+                                        <el-input v-model="formData.manager"></el-input>
+                                    </el-form-item>
+                                    <el-form-item label="Labs leads">
+                                        <el-select v-model="formData.labsLeads" placeholder="Please Select">
+                                            <el-option
+                                              v-for="item in labsOptions"
+                                              :key="item.value"
+                                              :label="item.label"
+                                              :value="item.value">
+                                            </el-option>
+                                        </el-select>
+                                    </el-form-item>
+                                    <el-form-item label="PM/CIO Name">
+                                        <el-input v-model="formData.pmCioName"></el-input>
+                                    </el-form-item>
+                                    <el-form-item label="Type">
+                                        <el-input v-model="formData.Type"></el-input>
+                                    </el-form-item>
+                                    <el-form-item label="Former Employer">
+                                        <el-input v-model="formData.formerEmployer"></el-input>
+                                    </el-form-item>
+                                    <el-form-item label="Firm AUM">
+                                        <el-input v-model="formData.firmAUM"></el-input>
+                                    </el-form-item>
+                                    <el-form-item label="Source">
+                                        <el-input v-model="formData.source"></el-input>
+                                    </el-form-item>
+                                    <el-form-item label="Available Strategy Capacity ($mm vol)">
+                                        <el-input v-model="formData.asCapacity"></el-input>
+                                    </el-form-item>
+                                    <el-form-item label="LinkedIn">
+                                        <el-input v-model="formData.connectionedinPage"></el-input>
+                                    </el-form-item>
+                                    <el-form-item label="Email Contact">
+                                        <el-input v-model="formData.emailContact"></el-input>
+                                    </el-form-item>
+                                  </el-card>
+                            </el-col>
+                            <!-- <el-col :span="12">
+                                <el-card class="box-card" shadow="never">
+                                    <div slot="header" class="clearfix">
+                                        <span style="color: #67C23A;">Communication History:</span>
+                                    </div>
+                                      <el-form-item label="Date">
+                                            <el-date-picker
+                                            v-model="formData.reviewDate"
+                                            type="date"
+                                            placeholder="Option Date">
+                                        </el-date-picker>
+                                      </el-form-item>
+                                      <el-form-item label="current stage of review ">
+                                        <el-select v-model="formData.currentStage" placeholder="please select">
+                                            <el-option
+                                            v-for="item in reviewOption"
+                                            :key="item.value"
+                                            :label="item.label"
+                                            :value="item.value">
+                                            </el-option>
+                                        </el-select>
+                                      </el-form-item>
+                                      <el-form-item label="comment">
+                                        <el-input v-model="formData.comment"></el-input>
+                                      </el-form-item>
+                                      <el-form-item label="investment conviction">
+                                        <el-select v-model="formData.investConviction" placeholder="please select">
+                                            <el-option
+                                            v-for="item in convOption"
+                                            :key="item.value"
+                                            :label="item.label"
+                                            :value="item.value">
+                                            </el-option>
+                                        </el-select>
+                                      </el-form-item>
+                                      <el-form-item label="want to revisit it?">
+                                        <el-radio-group v-model="formData.isRevisit">
+                                            <el-radio label="1">yes</el-radio>
+                                            <el-radio label="2">no</el-radio>
+                                          </el-radio-group>
+                                      </el-form-item>
+                                      <el-form-item label="How long to revisit?">
+                                        <el-select v-model="formData.howRevisit" placeholder="please select">
+                                            <el-option
+                                            v-for="item in visitOption"
+                                            :key="item.value"
+                                            :label="item.label"
+                                            :value="item.value">
+                                            </el-option>
+                                        </el-select>
+                                      </el-form-item>
+                                  </el-card>
+                            </el-col> -->
+                        </el-row>
+                        <el-row>
+                            <el-card class="box-card" shadow="never">
+                                <div slot="header" class="clearfix">
+                                    <span style="color: #67C23A;">Communication History:</span>
+                                </div>
+                                <el-upload
+                                    class="upload-demo"
+                                    action="/v1/upload"
+                                    :on-preview="handlePreview"
+                                    :on-remove="handleRemove"
+                                    :before-remove="beforeRemove"
+                                    multiple
+                                    :limit="3"
+                                    :on-success="uploadSucess"
+                                    :on-exceed="handleExceed"
+                                    :file-list="fileList">
+                                    <el-button size="small" type="primary">Upload</el-button>
+                                    <!-- <div slot="tip" class="el-upload__tip">只能上传jpg/png文件，且不超过500kb</div> -->
+                                </el-upload>
+                            </el-card>
+                        </el-row>
+                    </el-form>
+                    <div slot="footer" class="dialog-footer">
+                        <el-button @click="cancel()">Cancel</el-button>
+                        <el-button type="primary" @click="handleEdit()">OK</el-button>
+                    </div>
+                </el-dialog>
+            </div>
+            <el-dialog title="Add meeting" :visible.sync="reviewDialogAddvisible">
+                <el-form ref="reviewForm" :model="reviewForm" :rules="rules" label-position="left" :loading="formLoading" size="small" label-width="200px">
+                    <el-row >
+                    <el-col :span="24">
+                        <el-card class="box-card" shadow="never">
+                            <div slot="header" class="clearfix">
+                                <span style="color: #67C23A;">Communication History:</span>
+                            </div>
+                                <el-form-item label="Date">
+                                    <el-date-picker
+                                    v-model="reviewForm.reviewDate"
+                                    type="date"
+                                    placeholder="Option Date">
+                                </el-date-picker>
+                                </el-form-item>
+                                <el-form-item label="Current Stage of Review ">
+                                <el-select v-model="reviewForm.currentStage" placeholder="Slease Select">
+                                    <el-option
+                                    v-for="item in reviewOption"
+                                    :key="item.value"
+                                    :label="item.label"
+                                    :value="item.value">
+                                    </el-option>
+                                </el-select>
+                                </el-form-item>
+                                <el-form-item label="Comment">
+                                <el-input v-model="reviewForm.comment"></el-input>
+                                </el-form-item>
+                                <el-form-item label="Investment Conviction">
+                                <el-select v-model="reviewForm.investConviction" placeholder="Please Select">
+                                    <el-option
+                                    v-for="item in convOption"
+                                    :key="item.value"
+                                    :label="item.label"
+                                    :value="item.value">
+                                    </el-option>
+                                </el-select>
+                                </el-form-item>
+                                <el-form-item label="Want to revisit it?">
+                                <el-radio-group v-model="reviewForm.isRevisit">
+                                    <el-radio label="yes">Yes</el-radio>
+                                    <el-radio label="no">No</el-radio>
+                                    </el-radio-group>
+                                </el-form-item>
+                                <el-form-item label="How long to revisit?">
+                                    <el-select v-model="formData.howRevisit" placeholder="Please Select">
+                                        <el-option
+                                        v-for="item in visitOption"
+                                        :key="item.value"
+                                        :label="item.label"
+                                        :value="item.value">
+                                        </el-option>
+                                    </el-select>
+                                </el-form-item>
+                            </el-card>
+                    </el-col>
+                </el-row>
+                </el-form>
+                <div slot="footer" class="dialog-footer">
+                    <el-button @click="cancel()">Cancel</el-button>
+                    <el-button type="primary" @click="reiveAddSubmit()">OK</el-button>
+                </div>
+            </el-dialog>
+            <!-- 回访记录 -->
+            <el-dialog title="Visit Record" :visible.sync="reviewDialogVisible">
+                <el-button style="float: right;" @click="handReivewAdd" >Add</el-button>
+                <div style="overflow-x: scroll;height: 500px;">
+                   
+                    <el-card class="box-card"  v-for="(item ,index) in reviewList" :key="item.Id" shadow="hover">
+                        <div slot="header" class="clearfix">
+                            <span>Meeting:{{index+1}}</span>
+                        </div>
+                        <div class="text item">
+                            <span class="title">Date:</span>
+                            {{item.reviewDate}}
+                        </div>
+                        <div class="text item">
+                            <span class="title">Current Stage of Review:</span>
+                            {{item.currentStage}}
+                        </div>
+                        <div class="text item">
+                            <span class="title">Comment:</span>
+                            {{item.comment}}
+                        </div>
+                        <div class="text item">
+                            <span class="title">Investment Conviction:</span>
+                            {{item.investConviction}}
+                        </div>
+                        <div class="text item">
+                            <span class="title">Want to Revisit it?:</span>
+                            {{item.isRevisit ==="1"? "Yes" : "No"}}
+                        </div>
+                        <div class="text item">
+                            <span class="title">How Long to Revisit?:</span>
+                            {{item.howRevisit}}
+                        </div>
+                    </el-card>
+                </div>
+            </el-dialog>
+
+        </div>
+    </div>
+</div>
+
+</body>
+
+<!-- 引入组件库 -->
+
+<script src="../js/vue.js"></script>
+
+<script src="../plugins/elementui/index.js"></script>
+
+<script type="text/javascript" src="../js/jquery.min.js"></script>
+
+<script src="../js/axios-0.18.0.js"></script>
+
+<script>
+    const myWindow = window
+    var vue = new Vue({
+        el: '#app',
+        data:{
+            dataList: [],//当前页要展示的列表数据
+            dialogFormVisible: false,//添加表单是否可见
+            dialogFormVisible4Edit:false,//编辑表单是否可见
+            // 非多个禁用
+            multiple: true,
+            // 非单个禁用
+            single: true,
+            ids: [],
+            formData: {},//表单数据
+            reviewForm:{
+                baseInfoId:null
+            },// 回访表单
+            reviewList:[],
+            reviewDialogVisible :false,
+            reviewDialogAddvisible:false,
+            rules: {//校验规则
+                type: [{ required: true, message: '图书类别为必填项', trigger: 'blur' }],
+                name: [{ required: true, message: '图书名称为必填项', trigger: 'blur' }]
+            },
+            pagination: {
+                pageNum: 1,//current page
+                pageSize:10,//each page shows 10 managers
+                total:0, //total manager
+                filter :{
+                    manager:""
+                }
+            },
+            formLoading:false,
+            // MI，AD，FF，BM，XL，FF/AD
+            labsOptions: [
+                {value: 'MI',label: 'MI'}, 
+                {value: 'AD',label: 'AD'}, 
+                {value: 'FF',label: 'FF'}, 
+                {value: 'BM',label: 'BM'}, 
+                {value: 'XL',label: 'XL'},
+                {value:"FF/AD",label:"FF/AD"}
+            ],
+            reviewOption:[
+                {value:"7 - Pass & Revisit",label:"7 - Pass & Revisit"},
+                {value:"6 - Pass",label:"6 - Pass"},
+                {value:"5 - Top of funnel",label:"5 - Top of funnel"},
+                {value: "4 - Pre Diligence",label: '4 - Pre Diligence'},
+                {value: "3 - Early Diligence",label: '3 - Early Diligence'},
+                {value: "2 - Late Diligence",label: '2 - Late Diligence'}, 
+                {value: "1 - Approved/Onboarding",label: '1 - Approved/Onboarding'}, 
+                {value: "0 - Invested",label: '0 - Invested'}, 
+                {value:"X - Manager Decline",label:"X - Manager Decline"},
+            ],
+            convOption:[
+                {value:"1 - Highest",label:"1 - Highest"},
+                {value:"2 - Above Average",label:"2 - Above Average"},
+                {value:"3 - Average",label:"3 - Average"},
+                {value:"4 - Material lssue",label:"4 - Material lssue"},
+            ],
+            visitOption:[
+                {value:"6",label:"6 months"},
+                {value:"12",label:"12 months"},
+                {value:"24",label:"24 months"},
+            ],
+            fileList: []
+        },
+
+        created() {
+            this.getAll();
+        },
+
+        methods: {
+            getAll() {
+                axios.post('/v1/info/page',this.pagination).then(({data: res})=>{
+                    this.dataList = res.data;
+                    this.pagination.total=res.total;
+                });
+            },
+            exportToCSV() {
+                const currentDate = new Date();
+                const timestamp = currentDate.toISOString().split("T")[0].replace(/-/g, "");
+
+                const filename = `export_${timestamp}.csv`;
+                let exportData = JSON.parse(JSON.stringify(this.dataList))
+                for (let index = 0; index < exportData.length; index++) {
+                    delete exportData[index].filePath
+                }
+
+                const csvContent = "data:text/csv;charset=utf-8," +
+                Object.keys(exportData[0]).join(",")+"\n"+
+                // headers.join(",") + "\n" +
+                exportData.map(row => Object.values(row).join(",")).join("\n");
+
+                const encodedUri = encodeURI(csvContent);
+                const connection = document.createElement("a");
+                connection.setAttribute("href", encodedUri);
+                connection.setAttribute("download", filename);
+                document.body.appendChild(connection);
+                connection.click();
+            },
+            //弹出添加窗口
+            handleCreate() {
+                this.dialogFormVisible=true;
+                this.resetForm();
+                this.fileList=[]
+
+            },
+            //重置表单
+            resetForm() {
+                this.formData={}
+            },
+            handlShowVisit(row){
+                this.reviewForm.baseInfoId = row.Id
+                this.getVisitList(row.Id)
+            },
+            transition(data){
+                return JSON.parse(data)
+            },
+            getVisitList(id){
+                axios.get('/v1/reviewHistory/list/'+id).then(({data: res})=>{
+                    if(res.status== 2001 && res.data != null ){
+                        this.reviewList = res.data
+                        this.reviewDialogVisible=true
+                        console.log(res.data)
+                    }
+                    else{
+                        this.$message({
+                            message: res.msg,
+                            type: 'error'
+                        });
+                    }
+                })
+            },
+            logout(){
+                axios.get('/v1/user/logout').then(({data: res})=>{
+                    this.$message({
+                            message: res.msg,
+                            type: 'success'
+                        });
+                        myWindow.location.href = "/";
+                })
+            },
+            handReivewAdd(){
+                this.reviewDialogAddvisible = true;
+            },
+            reiveAddSubmit(){
+                this.$refs["reviewForm"].validate(valid => {
+                    if (valid) {
+                        this.formLoading = true
+                        axios.post('/v1/reviewHistory/add',this.reviewForm).then(({data: res})=>{
+                            if(res.status===2001){
+                                this.reviewDialogAddvisible=false;
+                                this.$message({
+                                    message: res.msg,
+                                    type: 'success'
+                                });
+                                
+                            }else{
+                                this.$message({
+                                    message: res.msg,
+                                    type: 'error'
+                                });
+                            }
+                            this.formLoading=false;
+                        }).finally(()=>{
+                          this.getVisitList(this.reviewForm.baseInfoId)
+                          this.reviewForm ={
+                            baseInfoId:null
+                          }
+                        })
+                    }
+                });
+            },
+            //添加
+            handleAdd() {
+                this.$refs["dataAddForm"].validate(valid => {
+                    if (valid) {
+                        this.formLoading = true
+                        
+                        axios.post('/v1/info/add',this.formData).then(({data: res})=>{
+                            if(res.status===2001){
+                                this.dialogFormVisible=false;
+                                this.$message({
+                                    message: res.msg,
+                                    type: 'success'
+                                });
+                                
+                            }else{
+                                this.$message({
+                                    message: res.msg,
+                                    type: 'error'
+                                });
+                            }
+                            this.formLoading=false;
+                        }).finally(()=>{
+                            this.getAll();
+                        })
+                    }
+                });
+            },
+
+            //取消
+            cancel(){
+                this.dialogFormVisible=false;
+                this.dialogFormVisible4Edit = false;
+                this.reviewDialogAddvisible = false;
+                this.$message.info("Operation cancellation");
+            },
+            // 多选框选中数据
+            handleSelectionChange(selection) {
+                this.ids = selection.map(item => item.Id)
+                this.single = selection.length!==1
+                this.multiple = !selection.length
+            },
+            // 删除
+            handleDelete(row) {
+                const ids = row.Id!=null ? [row.Id] : this.ids;
+                this.$confirm("This operation permanently deletes data. Do you want to continue?","tips",{
+                    confirmButtonText: "OK", // Set English text for the confirmation button
+                    cancelButtonText: "Cancel", // Set English text for the cancel button
+                    type:"info"
+                }).then(()=>{
+
+                    axios.post('/v1/info/delete',{ids:ids}).then(({data: res})=>{
+                        if(res.status===2001){
+                            this.$message({
+                                message: res.msg,
+                                type: 'success'
+                            });
+                        }else{
+                            this.$message({
+                                    message: res.msg,
+                                    type: 'error'
+                                });
+                        }
+                            
+                    }).finally(()=>{
+                        this.getAll();
+                    });
+                }).catch(()=>{
+                    this.$message.info("Operation cancellation");
+                })
+
+            },
+
+            //弹出编辑窗口
+            handleUpdate(row) {
+                axios.get('/v1/info/'+row.Id).then(({data: res})=>{
+                    if(res.status== 2001 && res.data != null ){
+                        this.dialogFormVisible4Edit=true;
+                        this.formData = res.data
+                        this.fileList = JSON.parse(this.formData.filePath)
+                        console.log(res.data)
+                    }
+                    else{
+                        this.$message({
+                            message: res.msg,
+                            type: 'error'
+                        });
+                    }
+                })
+            },
+
+            //修改
+            handleEdit() {
+                axios.post('/v1/info/update',this.formData).then(({data: res})=>{
+                    if(res.status== 2001) {
+                        this.dialogFormVisible4Edit = false;
+                        this.$message({
+                            message: res.msg,
+                            type: 'success'
+                        });
+                    }
+                    else{
+                        this.$message({
+                            message: res.msg,
+                            type: 'error'
+                        });
+                    }
+                }).finally(()=>{
+                    this.getAll();
+                })
+            },
+            //切换页码
+            handleCurrentChange(currentPage) {
+                this.pagination.currentPage = currentPage;
+                this.getAll();
+            },
+            uploadSucess(response, file, fileList){
+                console.log(fileList,"atao")
+                const resultArray = fileList.map(item => {
+                    return {
+                        name: item.name,
+                        data: (item.response === undefined)? item.data : item.response.data
+                    };
+                });
+                this.formData.filePath = JSON.stringify(resultArray)
+            },
+            handleRemove(file, fileList) {
+                const resultArray = fileList.map(item => {
+                    return {
+                        name: item.name,
+                        data: item.data
+                    };
+                });
+                this.formData.filePath = JSON.stringify(resultArray)
+            },
+            handlePreview(file) {
+                console.log(file);
+            },
+            handleExceed(files, fileList) {
+                this.$message.warning(`Only allow to choose maximum 3 documents，currently choose ${files.length} documents，total choose ${files.length + fileList.length} documents`);
+            },
+            beforeRemove(file, fileList) {
+                return this.$confirm(`Are you sure about removal ${ file.name }？`);
+            }
+        }
+    })
+
+</script>
+<style>
+
+.text.item {
+    margin-bottom: 10px;
+}
+
+.text.item .title {
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+.content-header{
+    display: flex;
+    align-content: stretch;
+    justify-content: space-between;
+    flex-direction: row;
+    align-items: center;
+}
+</style>
+</html>

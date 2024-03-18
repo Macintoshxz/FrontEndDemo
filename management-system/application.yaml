@@ -1,0 +1,22 @@
+app:
+  name: lingguang-admin
+  port: 8081
+datasource:
+  host: 192.168.0.107
+  port: 3306
+  database: iot_system
+  username: root
+  password: 123456
+admin:
+  email: xli@bamfunds.com
+redis:
+  addr: "192.168.0.107:6379"
+  password: "ataonihao.com" #
+  DB: 0  #use default DB
+# emqx:
+#   apiKey: a27e107add1a90c0
+#   secretKey: OjxVHRUf7Td2cpGPodrC9BzPMte0pBdt6HWegxBzw2vH
+#   Host: 192.168.0.101
+#   prot: 1883
+#   userName : admin
+#   password : ataonihao.com
