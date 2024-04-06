@@ -30,6 +30,8 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
+var cf *config.Config
+
 func isTargetDatePlusDays(targetTime time.Time, days int) bool {
 	// 获取今天的时间
 	now := time.Now().Truncate(24 * time.Hour)
@@ -64,13 +66,20 @@ func MailSendCode(emailstr, msg string) (err error) {
 }
 
 func main() {
+
 	// 初始化配置文件
 	config.Init()
-
+	cf = config.GetCofnig()
 	logic.StartTimer(func() {
 
 		c := context.Background()
-		cli, err := qmgo.Open(c, &qmgo.Config{Uri: "mongodb://localhost:27017", Database: "management", Coll: "info"})
+		cli, err := qmgo.Open(c, &qmgo.Config{Uri: cf.Mongodb.URL, Database: "management", Coll: "info",
+			Auth: &qmgo.Credential{
+				AuthMechanism: cf.Mongodb.AuthMechanism,
+				Username:      cf.Mongodb.UserName,
+				Password:      cf.Mongodb.Password,
+				PasswordSet:   cf.Mongodb.PasswordSet,
+			}})
 		defer func() {
 			if err = cli.Close(c); err != nil {
 				panic(err)
@@ -244,7 +253,14 @@ func login(c *gin.Context) {
 		req = vo.LoginBody{}
 	)
 	err := c.ShouldBindJSON(&req)
-	cli, err := qmgo.Open(c, &qmgo.Config{Uri: "mongodb://localhost:27017", Database: "management", Coll: "user"})
+	cli, err := qmgo.Open(c, &qmgo.Config{Uri: cf.Mongodb.URL, Database: "management", Coll: "user",
+		Auth: &qmgo.Credential{
+			AuthMechanism: cf.Mongodb.AuthMechanism,
+			Username:      cf.Mongodb.UserName,
+			Password:      cf.Mongodb.Password,
+			PasswordSet:   cf.Mongodb.PasswordSet,
+		},
+	})
 	defer func() {
 		if err = cli.Close(c); err != nil {
 			panic(err)
@@ -286,7 +302,15 @@ func register(c *gin.Context) {
 	)
 
 	err := c.ShouldBindJSON(&req)
-	cli, err := qmgo.Open(c, &qmgo.Config{Uri: "mongodb://localhost:27017", Database: "management", Coll: "user"})
+	cli, err := qmgo.Open(c, &qmgo.Config{Uri: cf.Mongodb.URL, Database: "management", Coll: "user",
+		Auth: &qmgo.Credential{
+			AuthMechanism: cf.Mongodb.AuthMechanism,
+			Username:      cf.Mongodb.UserName,
+			Password:      cf.Mongodb.Password,
+			PasswordSet:   cf.Mongodb.PasswordSet,
+		},
+	})
+
 	if err != nil {
 		utils.CheckError(err, "mongodb connection exception")
 		return
@@ -342,7 +366,13 @@ func addInfo(c *gin.Context) {
 	err := c.ShouldBindJSON(&req)
 	utils.CheckError(err, "Parameter exception")
 
-	client, err := qmgo.NewClient(c, &qmgo.Config{Uri: "mongodb://localhost:27017"})
+	client, err := qmgo.NewClient(c, &qmgo.Config{Uri: cf.Mongodb.URL,
+		Auth: &qmgo.Credential{
+			AuthMechanism: cf.Mongodb.AuthMechanism,
+			Username:      cf.Mongodb.UserName,
+			Password:      cf.Mongodb.Password,
+			PasswordSet:   cf.Mongodb.PasswordSet,
+		}})
 	utils.CheckError(err, "mongodb connection exception")
 
 	defer func() {
@@ -381,6 +411,15 @@ func addInfo(c *gin.Context) {
 		return
 	}
 
+	err = coll.UpdateOne(c, bson.M{"_id": baseinfo.Id}, bson.M{"$set": bson.M{
+		"updateAt": req.ReviewDate,
+	}})
+
+	if err != nil {
+		utils.CheckError(err, "info insert error")
+		return
+	}
+
 	coll = db.Collection("commhistory")
 	commhistory := &logic.CommHistory{
 		BaseInfoId:       baseinfo.Id.Hex(),
@@ -395,6 +434,7 @@ func addInfo(c *gin.Context) {
 		utils.CheckError(err, "history insert error")
 		return
 	}
+
 	app.ResponseSuccess("save success", nil)
 }
 
@@ -406,7 +446,16 @@ func queryPage(c *gin.Context) {
 	)
 	err := c.ShouldBindJSON(&req)
 	utils.CheckError(err, "Parameter exception")
-	cli, err := qmgo.Open(c, &qmgo.Config{Uri: "mongodb://localhost:27017", Database: "management", Coll: "info"})
+
+	cli, err := qmgo.Open(c, &qmgo.Config{Uri: cf.Mongodb.URL, Database: "management", Coll: "info",
+		Auth: &qmgo.Credential{
+			AuthMechanism: cf.Mongodb.AuthMechanism,
+			Username:      cf.Mongodb.UserName,
+			Password:      cf.Mongodb.Password,
+			PasswordSet:   cf.Mongodb.PasswordSet,
+		},
+	})
+
 	defer func() {
 		if err = cli.Close(c); err != nil {
 			panic(err)
@@ -446,7 +495,14 @@ func getInfo(c *gin.Context) {
 	err := c.ShouldBindUri(&req)
 	utils.CheckError(err, "Parameter exception")
 
-	cli, err := qmgo.Open(c, &qmgo.Config{Uri: "mongodb://localhost:27017", Database: "management", Coll: "info"})
+	cli, err := qmgo.Open(c, &qmgo.Config{Uri: cf.Mongodb.URL, Database: "management", Coll: "info",
+		Auth: &qmgo.Credential{
+			AuthMechanism: cf.Mongodb.AuthMechanism,
+			Username:      cf.Mongodb.UserName,
+			Password:      cf.Mongodb.Password,
+			PasswordSet:   cf.Mongodb.PasswordSet,
+		},
+	})
 	defer func() {
 		if err = cli.Close(c); err != nil {
 			panic(err)
@@ -480,7 +536,12 @@ func deleteInfo(c *gin.Context) {
 	err := c.ShouldBindJSON(&req)
 	utils.CheckError(err, "Parameter exception")
 
-	client, err := qmgo.NewClient(c, &qmgo.Config{Uri: "mongodb://localhost:27017"})
+	client, err := qmgo.NewClient(c, &qmgo.Config{Uri: cf.Mongodb.URL, Auth: &qmgo.Credential{
+		AuthMechanism: cf.Mongodb.AuthMechanism,
+		Username:      cf.Mongodb.UserName,
+		Password:      cf.Mongodb.Password,
+		PasswordSet:   cf.Mongodb.PasswordSet,
+	}})
 	utils.CheckError(err, "mongodb connection exception")
 
 	defer func() {
@@ -526,7 +587,13 @@ func editInfo(c *gin.Context) {
 	err := c.ShouldBindJSON(&req)
 	utils.CheckError(err, "Parameter exception")
 
-	coll, err := qmgo.Open(c, &qmgo.Config{Uri: "mongodb://localhost:27017", Database: "management", Coll: "info"})
+	coll, err := qmgo.Open(c, &qmgo.Config{Uri: cf.Mongodb.URL, Database: "management", Coll: "info",
+		Auth: &qmgo.Credential{
+			AuthMechanism: cf.Mongodb.AuthMechanism,
+			Username:      cf.Mongodb.UserName,
+			Password:      cf.Mongodb.Password,
+			PasswordSet:   cf.Mongodb.PasswordSet,
+		}})
 	defer func() {
 		if err = coll.Close(c); err != nil {
 			panic(err)
@@ -570,7 +637,12 @@ func editCommHistory(c *gin.Context) {
 	err := c.ShouldBindJSON(&req)
 	utils.CheckError(err, "Parameter exception")
 
-	client, err := qmgo.NewClient(c, &qmgo.Config{Uri: "mongodb://localhost:27017"})
+	client, err := qmgo.NewClient(c, &qmgo.Config{Uri: cf.Mongodb.URL, Auth: &qmgo.Credential{
+		AuthMechanism: cf.Mongodb.AuthMechanism,
+		Username:      cf.Mongodb.UserName,
+		Password:      cf.Mongodb.Password,
+		PasswordSet:   cf.Mongodb.PasswordSet,
+	}})
 	utils.CheckError(err, "mongodb connection exception")
 
 	defer func() {
@@ -621,7 +693,12 @@ func addCommHistory(c *gin.Context) {
 	err := c.ShouldBindJSON(&req)
 	utils.CheckError(err, "Parameter exception")
 
-	client, err := qmgo.NewClient(c, &qmgo.Config{Uri: "mongodb://localhost:27017"})
+	client, err := qmgo.NewClient(c, &qmgo.Config{Uri: cf.Mongodb.URL, Auth: &qmgo.Credential{
+		AuthMechanism: cf.Mongodb.AuthMechanism,
+		Username:      cf.Mongodb.UserName,
+		Password:      cf.Mongodb.Password,
+		PasswordSet:   cf.Mongodb.PasswordSet,
+	}})
 	utils.CheckError(err, "mongodb connection exception")
 
 	defer func() {
@@ -658,7 +735,12 @@ func getCommHistoryByInfoId(c *gin.Context) {
 	err := c.ShouldBindUri(&req)
 	utils.CheckError(err, "Parameter exception")
 
-	coll, err := qmgo.Open(c, &qmgo.Config{Uri: "mongodb://localhost:27017", Database: "management", Coll: "commhistory"})
+	coll, err := qmgo.Open(c, &qmgo.Config{Uri: cf.Mongodb.URL, Database: "management", Coll: "commhistory", Auth: &qmgo.Credential{
+		AuthMechanism: cf.Mongodb.AuthMechanism,
+		Username:      cf.Mongodb.UserName,
+		Password:      cf.Mongodb.Password,
+		PasswordSet:   cf.Mongodb.PasswordSet,
+	}})
 	defer func() {
 		if err = coll.Close(c); err != nil {
 			panic(err)
@@ -684,7 +766,12 @@ func getHistory(c *gin.Context) {
 	err := c.ShouldBindUri(&req)
 	utils.CheckError(err, "Parameter exception")
 
-	cli, err := qmgo.Open(c, &qmgo.Config{Uri: "mongodb://localhost:27017", Database: "management", Coll: "commhistory"})
+	cli, err := qmgo.Open(c, &qmgo.Config{Uri: cf.Mongodb.URL, Database: "management", Coll: "commhistory", Auth: &qmgo.Credential{
+		AuthMechanism: cf.Mongodb.AuthMechanism,
+		Username:      cf.Mongodb.UserName,
+		Password:      cf.Mongodb.Password,
+		PasswordSet:   cf.Mongodb.PasswordSet,
+	}})
 	defer func() {
 		if err = cli.Close(c); err != nil {
 			panic(err)
