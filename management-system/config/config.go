@@ -14,6 +14,7 @@ type Config struct {
 	Appserver   appserver
 	AdminInfo   adminInfo
 	RedisConfig redisConfig
+	Mongodb     mongodb
 }
 
 type appserver struct {
@@ -37,6 +38,14 @@ type redisConfig struct {
 
 type adminInfo struct {
 	AdmInEmail string
+}
+
+type mongodb struct {
+	URL           string
+	UserName      string
+	Password      string
+	PasswordSet   bool
+	AuthMechanism string
 }
 
 var appConfig = &Config{}
@@ -83,6 +92,13 @@ func initConfig() {
 			Addr:     viper.GetString("redis.addr"),
 			Password: viper.GetString("redis.password"),
 			DB:       viper.GetInt("redis.DB"),
+		},
+		mongodb{
+			URL:           viper.GetString("mongodb.url"),
+			UserName:      viper.GetString("mongodb.userName"),
+			Password:      viper.GetString("mongodb.password"),
+			AuthMechanism: viper.GetString("mongodb.AuthMechanism"),
+			PasswordSet:   viper.GetBool("mongodb.passwordSet"),
 		},
 	}
 }
